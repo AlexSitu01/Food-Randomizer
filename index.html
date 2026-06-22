@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Cozy Food Picker</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+</head>
+<body>
+
+  <button class="theme-toggle" id="themeToggle" title="Toggle cozy mode">
+    <span class="theme-icon" id="themeIcon">&#x1F319;</span>
+  </button>
+
+  <header class="app-header">
+    <h1 class="app-title">&#x1F353; Cozy Food Picker</h1>
+    <p class="app-subtitle">Let's find something cozy to eat &#x1F495;</p>
+  </header>
+
+  <main class="app-main">
+
+    <!-- File protocol warning -->
+    <div class="warn-card" id="fileProtocolWarn" hidden>
+      <p class="warn-emoji">&#x26A0;&#xFE0F;</p>
+      <p class="warn-title">Open via a local server</p>
+      <p class="warn-desc">
+        Browsers block API requests from <code>file://</code> pages.
+        Run one of these in this folder, then open <code>http://localhost:8080</code>:
+      </p>
+      <div class="code-block">
+        <span class="code-label">Python</span>
+        <code>python -m http.server 8080</code>
+      </div>
+      <div class="code-block">
+        <span class="code-label">Node</span>
+        <code>npx serve .</code>
+      </div>
+      <div class="code-block">
+        <span class="code-label">VS Code</span>
+        <code>Install "Live Server" &rarr; click Go Live</code>
+      </div>
+    </div>
+
+    <!-- Setup card -->
+    <section class="card setup-card" id="setupCard">
+      <div class="setup-icon">&#x1F5DD;&#xFE0F;</div>
+      <h2 class="card-title">Quick Setup</h2>
+      <p class="setup-desc">
+        Enter a <strong>Google Maps Platform API key</strong> with
+        <strong>Places API (New)</strong> enabled. Saved locally &mdash; never leaves your browser.
+      </p>
+      <div class="setup-input-row">
+        <input
+          type="password"
+          id="apiKeyInput"
+          class="text-input"
+          placeholder="AIza&hellip;your key here"
+          autocomplete="off"
+          spellcheck="false"
+        />
+        <button class="btn btn-primary" id="saveKeyBtn">Save &#x2728;</button>
+      </div>
+      <p class="setup-hint">
+        Google Cloud Console &rarr; APIs &amp; Services &rarr; enable
+        <a href="https://console.cloud.google.com/apis/library/places.googleapis.com" target="_blank" rel="noopener">Places API (New) &rarr;</a>
+      </p>
+      <div id="keyError" class="key-error" hidden></div>
+    </section>
+
+    <!-- Filter card -->
+    <section class="card filter-card" id="filterCard" hidden>
+      <h2 class="card-title">What are we craving today? &#x1F35C;</h2>
+
+      <!-- Location picker -->
+      <div class="filter-group">
+        <label class="filter-label">
+          <span class="filter-emoji">&#x1F4CD;</span>
+          Search location
+          <span class="filter-hint">defaults to your current location</span>
+        </label>
+        <div class="location-input-row">
+          <input
+            type="text"
+            id="locationInput"
+            class="location-input"
+            placeholder="City, neighborhood, or address&hellip;"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button class="location-gps-btn" id="locationGpsBtn" title="Use my current location" aria-label="Use my current location">
+            &#x1F4E1;
+          </button>
+        </div>
+        <p class="location-badge" id="locationBadge"></p>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">
+          <span class="filter-emoji">&#x1F337;</span>
+          Foods I'm craving
+          <span class="filter-hint">press Enter or comma to add</span>
+        </label>
+        <div class="tag-input-wrap" id="whitelistWrap">
+          <div class="tags-list" id="whitelistTags"></div>
+          <input type="text" class="tag-input" id="whitelistInput" placeholder="e.g. sushi, burger&hellip;" />
+        </div>
+      </div>
+
+      <div class="filter-group">
+        <label class="filter-label">
+          <span class="filter-emoji">&#x1F6AB;</span>
+          Not in the mood for
+          <span class="filter-hint">press Enter or comma to add</span>
+        </label>
+        <div class="tag-input-wrap" id="blacklistWrap">
+          <div class="tags-list" id="blacklistTags"></div>
+          <input type="text" class="tag-input" id="blacklistInput" placeholder="e.g. fast food, pizza&hellip;" />
+        </div>
+      </div>
+
+      <!-- Open now toggle -->
+      <div class="filter-group toggle-group">
+        <label class="filter-label" for="openNowToggle">
+          <span class="filter-emoji">&#x1F55B;</span>
+          Open now only
+        </label>
+        <label class="toggle-switch">
+          <input type="checkbox" id="openNowToggle" />
+          <span class="toggle-track"></span>
+        </label>
+      </div>
+
+      <!-- Price filter -->
+      <div class="filter-group">
+        <label class="filter-label">
+          <span class="filter-emoji">&#x1F4B0;</span>
+          Price range
+          <span class="filter-hint">pick any, or leave all off for any price</span>
+        </label>
+        <div class="radius-pills" id="pricePills">
+          <button class="radius-pill price-pill" data-value="PRICE_LEVEL_INEXPENSIVE">$</button>
+          <button class="radius-pill price-pill" data-value="PRICE_LEVEL_MODERATE">$$</button>
+          <button class="radius-pill price-pill" data-value="PRICE_LEVEL_EXPENSIVE">$$$</button>
+          <button class="radius-pill price-pill" data-value="PRICE_LEVEL_VERY_EXPENSIVE">$$$$</button>
+        </div>
+      </div>
+
+      <!-- Distance pill selector -->
+      <div class="radius-row">
+        <span class="filter-label radius-label">
+          <span class="filter-emoji">&#x1F4CD;</span>
+          Search within
+        </span>
+        <div class="radius-pills" id="radiusPills">
+          <button class="radius-pill" data-value="1609">1 mi</button>
+          <button class="radius-pill active" data-value="8047">5 mi</button>
+          <button class="radius-pill" data-value="16093">10 mi</button>
+          <button class="radius-pill" data-value="32187">20 mi</button>
+        </div>
+      </div>
+
+      <button class="btn btn-primary pick-btn" id="pickBtn" disabled>
+        <span class="btn-text">Pick Something Yummy &#x1F35C;</span>
+        <span class="btn-shimmer"></span>
+      </button>
+
+      <p class="location-status" id="locationStatus">
+        &#x1F4CD; Waiting for your location&hellip;
+      </p>
+    </section>
+
+    <!-- Loading -->
+    <div class="loading-card" id="loadingCard" hidden>
+      <div class="loading-dots"><span></span><span></span><span></span></div>
+      <p class="loading-text" id="loadingText">Finding something delicious for you&hellip;</p>
+    </div>
+
+    <!-- Result card -->
+    <section class="card result-card" id="resultCard" hidden>
+      <div class="result-badge" id="resultBadge">&#x1F37D;&#xFE0F;</div>
+
+      <div class="result-photo-wrap" id="resultPhotoWrap" hidden>
+        <img class="result-photo" id="resultPhoto" src="" alt="Restaurant photo" />
+      </div>
+
+      <h2 class="result-name" id="resultName">Restaurant Name</h2>
+
+      <div class="result-meta">
+        <span class="result-rating" id="resultRating"></span>
+        <span class="result-cuisine" id="resultCuisine"></span>
+        <span class="result-price" id="resultPrice"></span>
+        <span class="result-hours" id="resultHours"></span>
+      </div>
+
+      <p class="result-address" id="resultAddress"></p>
+
+      <div class="result-actions">
+        <button class="btn btn-secondary reroll-btn" id="rerollBtn">
+          Try another one &#x1F36A;
+        </button>
+        <a class="btn btn-outline" id="mapsLink" href="#" target="_blank" rel="noopener">
+          Open in Maps &#x1F5FA;&#xFE0F;
+        </a>
+      </div>
+    </section>
+
+    <!-- No results -->
+    <div class="no-results-card" id="noResultsCard" hidden>
+      <p class="no-results-emoji">&#x1F97A;</p>
+      <p class="no-results-text">Hmm, nothing matched your filters&hellip;</p>
+      <p class="no-results-hint">Try loosening your cravings list, or expanding the search distance!</p>
+    </div>
+
+    <!-- Error / location denied -->
+    <div class="error-card" id="locationDeniedCard" hidden>
+      <p class="error-emoji">&#x1F4CD;</p>
+      <p class="error-text">Location access was denied</p>
+      <p class="error-hint">Please allow location access in your browser and refresh the page.</p>
+      <button class="btn btn-secondary" id="retryLocationBtn">Try again &#x1F504;</button>
+    </div>
+
+  </main>
+
+  <footer class="app-footer">
+    <p>Made with &#x1F496; &amp; snacks &middot; <span id="changeKeyBtn" class="footer-link">Change API key</span></p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
